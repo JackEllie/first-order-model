@@ -142,13 +142,13 @@ if __name__ == "__main__":
         pass
     reader.close()
 
-    source_image = resize(source_image, (256, 256))[..., :3]
-    driving_video = [resize(frame, (256, 256))[..., :3] for frame in driving_video]
+    source_image = resize(source_image, (512, 512))[..., :3]
+    driving_video = [resize(frame, (512, 512))[..., :3] for frame in driving_video]
     generator, kp_detector = load_checkpoints(config_path=opt.config, checkpoint_path=opt.checkpoint, cpu=opt.cpu)
 
     if opt.find_best_frame or opt.best_frame is not None:
         i = opt.best_frame if opt.best_frame is not None else find_best_frame(source_image, driving_video, cpu=opt.cpu)
-        print("Best frame: " + str(i))
+        print ("Best frame: " + str(i))
         driving_forward = driving_video[i:]
         driving_backward = driving_video[:(i+1)][::-1]
         predictions_forward = make_animation(source_image, driving_forward, generator, kp_detector, relative=opt.relative, adapt_movement_scale=opt.adapt_scale, cpu=opt.cpu)
@@ -159,10 +159,7 @@ if __name__ == "__main__":
     imageio.mimsave(opt.result_video, [img_as_ubyte(frame) for frame in predictions], fps=fps)
 
     if opt.audio:
-        try:
-            with NamedTemporaryFile(suffix=splitext(opt.result_video)[1]) as output:
-                ffmpeg.output(ffmpeg.input(opt.result_video).video, ffmpeg.input(opt.driving_video).audio, output.name, c='copy').run()
-                with open(opt.result_video, 'wb') as result:
-                    copyfileobj(output, result)
-        except ffmpeg.Error:
-            print("Failed to copy audio: the driving video may have no audio track or the audio format is invalid.")
+        with NamedTemporaryFile(suffix='.' + splitext(opt.result_video)[1]) as output:
+            ffmpeg.output(ffmpeg.input(opt.result_video).video, ffmpeg.input(opt.driving_video).audio, output.name, c='copy').run()
+            with open(opt.result_video, 'wb') as result:
+                copyfileobj(output, result)
